@@ -1,0 +1,788 @@
+
+
+
+    // "start": "nodemon index.js"
+
+// https://cloud.mongodb.com/v2/69174dafe7ce87484f328a3f#/metrics/replicaSet/69174ed97aa26f33bdfdcf55/explorer/schoolDB/users/find
+// div multi line in react
+// design ui/ux add event web 
+// https://www.w3schools.com/css/css_image_transparency.asp
+// https://dashboard.render.com/
+// This is how you "create" data in MongoDB through a React app.
+//React sends a POST request.
+// Express receives it and uses Mongoose to create in MongoDB.
+// https://cloud.mongodb.com/v2/69174dafe7ce87484f328a3f#/explorer/69174df495eaf35c70234139
+
+
+
+
+
+// import dotenv from "dotenv";
+
+
+const express = require('express')
+const mongoose = require('mongoose')
+const cors = require("cors")
+const bodyParser = require("body-parser");
+//  const bcrypt = require("bcrypt");
+ 
+
+// const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
+// import path from "path";
+
+
+// event activities 
+const EventModel = require('./models/event.js')
+const ServiceModel = require('./models/service.js')
+
+// const GroupModel = require('./models/Group');
+const ContactModel = require('./models/contact.js')
+const User = require('./models/User.js')
+// const dotenv = require("dotenv");
+
+// const PORT = process.env.PORT;
+const PORT = 3001;
+const app = express()
+
+// dotenv.config();
+app.use(express.json())
+
+// app.use(express.json({ limit: "10mb" }));
+// app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+// app.use(cors({
+//   origin: "https://school-f.vercel.app",
+//   methods: "GET,POST,PUT,DELETE,OPTIONS",
+//   allowedHeaders: "Content-Type, Authorization"
+// }));
+
+// const allowedOrigins = [
+//   process.env.FRONTEND_URL_LOCAL,
+//   process.env.FRONTEND_URL_PROD
+// ];
+app.use(cors());
+
+// app.use(cors({
+//   origin: function(origin, callback){
+//     // allow requests with no origin (Postman, curl)
+//     if(!origin) return callback(null, true);
+
+//     if(allowedOrigins.indexOf(origin) === -1){
+//       const msg = `CORS policy: ${origin} not allowed`;
+//       return callback(new Error(msg), false);
+//     }
+
+//     return callback(null, true);
+//   },
+//   credentials: true
+// }));
+
+app.use(bodyParser.json());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // serve uploaded files
+// const __dirname = path.resolve();
+
+mongoose.connect('mongodb://127.0.0.1:27017/associationDB')
+.then(() => console.log("✅ MongoDB connected"))
+  .catch(err => console.log("❌ MongoDB error:", err.message));
+// const URL = "mongodb://127.0.0.1:27017/school"
+//  const URL = process.env.MONGODB_URL;
+// //  {
+// //   useNewUrlParser: true,
+// //   useUnifiedTopology: true
+// // }
+// mongoose.connect(URL)
+// .then(() => console.log("✅ Connected to MongoDB successfully"))
+// .catch(err => console.error("❌ MongoDB connection error:", err));
+
+
+
+// Serve frontend build
+// app.use(express.static(path.join(__dirname, "client", "dist")));
+
+// app.get("*", (req, res) => {
+//   res.sendFile(path.join(__dirname, "client", "dist", "index.html"));
+// });
+
+
+// 📝 Login Route
+
+
+app.post("/api/auth/login", async (req, res) => {
+  const { email, password } = req.body;
+  const user = await User.findOne({ email: email.toLowerCase() });
+  if (!user) return res.status(400).json({ message: " البريد الإلكتروني أو كلمة المرور  غير صحيحة " });
+
+  const valid = await user.validatePassword(password);
+  if (!valid) return res.status(400).json({ message: " البريد الإلكتروني أو كلمة المرور  غير صحيحة " });
+
+  res.json({ message: " تسجيل دخول صحيح", email: user.email });
+});
+
+//  Change Password Route
+app.post("/api/auth/change-password", async (req, res) => {
+  const { email, oldPassword,newPassword } = req.body;
+  const user = await User.findOne({ email: email.toLowerCase() });
+  if (!user) return res.status(400).json({ message: "User not found" });
+
+  //  Verify old password
+  const valid = await user.validatePassword(oldPassword);
+  if (!valid) return res.status(400).json({ message: "Old password is incorrect" });
+
+  await user.setPassword(newPassword);
+  await user.save();
+
+  res.json({ message: "Password updated successfully" });
+});
+
+//  Register Route
+app.post("/api/auth/register", async (req, res) => {
+  const { email, password } = req.body;
+  const exist = await User.findOne({ email: email.toLowerCase() });
+  if (exist) return res.status(400).json({ message: "Email already exists" });
+
+  const user = new User({ email: email.toLowerCase() });
+  await user.setPassword(password);
+  await user.save();
+
+  res.json({ message: "User created" });
+});
+
+
+
+
+
+
+
+
+//  Ensure uploads folder exists
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir);
+}
+
+// Multer setup
+// const storage = multer.memoryStorage({
+
+// const storage = multer.diskStorage({
+//   destination: function (req, file, cb) {
+//     cb(null, 'uploads/'); // folder for uploaded images
+//   },
+//   filename: function (req, file, cb) {
+//     cb(null, Date.now() + '-' + file.originalname); // unique filenames
+//   }
+// });
+
+// const upload = multer({ storage });
+
+
+
+// app.post("/createEvent", upload.fields([
+//   { name: "mainImage", maxCount: 1 },
+//   { name: "images", maxCount: 10 }
+// ]), async (req, res) => {
+//   try {
+//     const { date, place, title, text } = req.body;
+
+//     // Construct URLs for main image and additional images
+//     const mainImagePath = req.files.mainImage 
+//       ? '/uploads/' + req.files.mainImage[0].filename 
+//       : '';
+
+//     const imagesPaths = req.files.images 
+//       ? req.files.images.map(f => '/uploads/' + f.filename) 
+//       : [];
+
+//     // Create and save new event
+//     const newEvent = new EventModel({
+//       mainImage: mainImagePath,
+//       images: imagesPaths,
+//       date,
+//       place,
+//       title,
+//       text
+//     });
+
+//     const savedEvent = await newEvent.save();
+//     res.status(201).json(savedEvent);
+//     console.log("📌 Event saved:", savedEvent);
+
+//   } catch (err) {
+//     console.error(err); 
+//     res.status(500).json({ error: err.message });
+//   }
+// });
+
+
+app.post('/contactassociation', (req, res) => {
+    // console.log(" Incoming order:", req.body); 
+     // للتأكد من وصول البيانات
+
+  ContactModel.create(req.body)
+    .then(contactsch=>{
+            console.log(" Saved order:", contactsch);
+
+       res.json(contactsch)})
+    .catch(err => res.json(err));
+})
+
+
+
+app.get('/contactschool', async (req, res) => {
+  try {
+    const contacts = await ContactModel.find();
+        // console.log(" Sending contacts:", contacts); 
+
+    res.json(contacts);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch contacts" });
+  }
+});
+
+// last
+// const storage = multer.memoryStorage();
+// const upload = multer({ storage });
+
+// app.post("/createEventBase64", upload.fields([
+//   { name: "mainImage", maxCount: 1 },
+//   { name: "images", maxCount: 10 }
+// ]), async (req, res) => {
+//   try {
+//     const { date, place, title, text } = req.body;
+
+//     let mainImageBase64 = req.files.mainImage
+//       ? req.files.mainImage[0].buffer.toString("base64")
+//       : "";
+
+//     let imagesBase64 = req.files.images
+//       ? req.files.images.map(f => f.buffer.toString("base64"))
+//       : [];
+
+//     const newEvent = new EventModel({
+//       mainImage: mainImageBase64,
+//       images: imagesBase64,
+//       date,
+//       place,
+//       title,
+//       text
+//     });
+
+//     const savedEvent = await newEvent.save();
+//     res.status(201).json(savedEvent);
+
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// });
+
+
+// const upload = multer({ storage: multer.memoryStorage() });
+
+// const uploadToCloud = (buffer, folder) => {
+//   return new Promise((resolve, reject) => {
+//     const stream = cloudinary.uploader.upload_stream(
+//       { folder },
+//       (err, result) => {
+//         if (err) reject(err);
+//         else resolve(result.secure_url);
+//       }
+//     );
+//     streamifier.createReadStream(buffer).pipe(stream);
+//   });
+// };
+
+// app.post(
+//   "/createEvent",
+//   upload.fields([
+//     { name: "mainImage", maxCount: 1 },
+//     { name: "images", maxCount: 10 }
+//   ]),
+//   async (req, res) => {
+//     try {
+//       const { date, place, title, text } = req.body;
+
+//       // Upload main image
+//       let mainImageUrl = "";
+//       if (req.files.mainImage) {
+//         mainImageUrl = await uploadToCloud(
+//           req.files.mainImage[0].buffer,
+//           "events"
+//         );
+//       }
+
+//       // Upload multiple images
+//       let imagesUrls = [];
+//       if (req.files.images) {
+//         for (const file of req.files.images) {
+//           const url = await uploadToCloud(file.buffer, "events");
+//           imagesUrls.push(url);
+//         }
+//       }
+
+//       // Save event
+//       const newEvent = new EventModel({
+//         mainImage: mainImageUrl,
+//         images: imagesUrls,
+//         date,
+//         place,
+//         title,
+//         text
+//       });
+
+//       const saved = await newEvent.save();
+//       res.status(201).json(saved);
+
+//     } catch (err) {
+//       console.error(err);
+//       res.status(500).json({ error: err.message });
+//     }
+//   }
+// );
+
+// crud
+// const express = require('express')
+// const mongoose = require('mongoose')
+// const cors = require('cors')
+// const UserModel = require('./models/Users')
+
+// const app = express()
+// app.use(cors())
+// app.use(express.json())
+// mongoose.connect("mongodb://127.0.0.1:27017/crud")
+// crud
+
+
+// mongodb://localhost:27017
+// mongoose:تسهل التعامل مع MongoDB في تطبيقات Node.js
+
+// mongoose.connect('mongodb://127.0.0.1:27017/employee', {
+//   useNewUrlParser: true,
+//   useUnifiedTopology: true,
+//   family: 4, // Ensure IPv4
+// }).then(() => {
+//   console.log('Connected to MongoDB successfully!');
+// }).catch(err => {
+//   console.error('MongoDB connection error:', err);
+// });
+
+// .then(() => {
+//   console.log("Connected to MongoDB!");
+// }).catch((err) => {
+//   console.log("MongoDB connection error:", err);
+// });;
+
+// create route (post)
+
+
+
+
+
+
+
+
+// app.post("/login", (req, res) => {
+//   const { email, password } = req.body;
+//   //read
+//   Loginsch.findOne({ email: email })
+//     .then(user => {
+//       if (user) {
+//         if (user.password === password) {
+//           res.json('success')
+//         } else {
+//           res.json('the password is incorrect ')
+//         }
+//       } else {
+//         res.json('no record existed ')
+//       }
+//     })
+// })
+
+
+
+
+
+// mongoose.connection.once('open', () => {
+//     console.log('MongoDB connected');
+//   });
+
+
+
+// create 
+
+
+
+// Add a route to fetch   saved contacts in react:
+
+
+app.delete("/deleteMessage/:id", async (req, res) => {
+  try {
+    await ContactModel.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: "Message deleted" });
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
+app.post('/contactschool', (req, res) => {
+    // console.log(" Incoming order:", req.body); 
+     // للتأكد من وصول البيانات
+
+  ContactModel.create(req.body)
+    .then(contactsch=>{
+            console.log(" Saved order:", contactsch);
+
+       res.json(contactsch)})
+    .catch(err => res.json(err));
+})
+app.get("/events" , (req,res) => {
+ EventModel.find({}) //حتىalways returns an array, even  if empty .
+    .then(event => res.json(event))     // sends array of events
+    .catch(err => res.json(err))
+})
+
+ 
+// true
+
+app.get("/getEvent/:id" , (req,res) => {
+    const id = req.params.id;
+    EventModel.findById({_id:id})
+    .then(event => res.json(event)) 
+    .catch(err => res.json(err))
+})
+
+// index.js
+// app.get("/getevents/:id", (req, res) => {
+//   const { id } = req.params;
+//   EventModel.findById(id)
+//     .then(event => {
+//       if (!event) return res.status(404).json({ message: "Event not found" });
+//       res.json(event);
+//     })
+//     .catch(err => res.status(500).json(err));
+// });
+
+
+app.post("/createEventBase64", async (req, res) => {
+  try {
+    const { date, place, title, text, mainImage, images } = req.body;
+
+    const newEvent = new EventModel({
+      mainImage: mainImage || "",
+      images: images || [],
+      date,
+      place,
+      title,
+      text,
+    });
+
+    const savedEvent = await newEvent.save();
+    res.status(201).json(savedEvent);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+app.put("/updateEvent/:id" , (req,res) => {
+    const id = req.params.id;
+    EventModel.findByIdAndUpdate({_id:id}, {
+// Updated fields
+     mainImage	: req.body.mainImage	,  
+      images	: req.body.images	,  
+      date	: req.body.date,  
+     place: req.body.place,  
+           title : req.body.title , 
+         text: req.body.text,  
+ 
+            
+
+    })
+    .then(event => res.json(event))
+            // .then(user => res.json(user))
+
+        // .then(groups => res.json(groups))
+
+    .catch(err => res.json(err))
+})  
+
+
+
+// app.put("/deleteEventImage/:id" ,async (req, res) => {
+//   try {
+//     // Receives image index from frontend
+//     const { index } = req.body;
+//     const event = await EventModel.findById(req.params.id);
+//     if (!event) return res.status(404).json({ error: "Event not found" });
+
+//     event.images.splice(index, 1); // remove the image at the given index
+//     await event.save();
+
+//     res.json(event);
+//   } catch (err) {
+//     res.status(500).json(err);
+//   }
+// });
+
+
+app.delete("/deleteEvent/:id", async (req, res) => {
+  const id = req.params.id;
+  try {
+    const deletedUser = await EventModel.findByIdAndDelete(id);
+    if (!deletedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json(deletedUser);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+
+
+
+// services
+
+app.get("/services", async (req, res) => {
+  try {
+    const services = await ServiceModel.find();
+    res.json(services);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
+
+app.get("/getService/:id" , (req,res) => {
+    const id = req.params.id;
+    EventModel.findById({_id:id})
+    .then(event => res.json(event)) 
+    .catch(err => res.json(err))
+})
+app.post("/services", async (req, res) => {
+  try {
+    const service = await ServiceModel.create(req.body);
+    res.status(201).json(service);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
+
+
+
+app.put("/services/:id", async (req, res) => {
+  try {
+    const updated = await ServiceModel.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
+
+app.delete("/services/:id", async (req, res) => {
+  try {
+    await ServiceModel.findByIdAndDelete(req.params.id);
+    res.json({ message: "Service deleted" });
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
+
+
+
+
+app.get("/req", (req, res) => {
+  res.send("Backend is working success. ✅");
+});
+
+
+app.listen(PORT, () => {
+  console.log(`✅ Server running on port ${PORT}`)
+
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// -------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// -------------------------------------------------------------------
+
+// const mongoose = require('mongoose');
+
+
+
+// const EmployeeSchema = new mongoose.Schema({
+//   name: String,
+//   email: String,
+//   password: String
+// })
+
+// const EmployeeModel = mongoose.model("employees", EmployeeSchema)
+
+// module.exports = EmployeeModel
+
+
+
+
+// To create (insert) data in MongoDB from a React.js project, you typically follow this structure:
+
+
+// ---
+
+// Step-by-Step Guide
+
+// 1. Backend Setup (Node.js + Express + MongoDB)
+
+// You'll need a backend server to handle requests from your React app.
+
+// // Example: server.js
+
+// const express = require('express');
+// const mongoose = require('mongoose');
+// const cors = require('cors');
+
+// const app = express();
+// app.use(express.json());
+// app.use(cors());
+
+// // Connect to MongoDB
+// mongoose.connect('mongodb://localhost:27017/mydb', { useNewUrlParser: true, useUnifiedTopology: true });
+
+// // Define Schema and Model
+// const UserSchema = new mongoose.Schema({ name: String, age: Number });
+// const User = mongoose.model('User', UserSchema);
+
+// // Create Route (POST)
+// app.post('/api/users', async (req, res) => {
+//   try {
+//     const newUser = await User.create(req.body);
+//     res.status(201).json(newUser);
+//   } catch (err) {
+//     res.status(400).json({ error: err.message });
+//   }
+// });
+
+// app.listen(5000, () => console.log('Server running on port 5000'));
+
+
+// ---
+
+  // 2. Frontend Setup(React.js)
+    
+  //   In your React component, use fetch or axios to send data to the backend.
+
+  // Example: Create Form in React
+
+// import { useState } from 'react';
+// import axios from 'axios';
+
+// function CreateUser() {
+//   const [name, setName] = useState('');
+//   const [age, setAge] = useState('');
+
+//   const handleSubmit = async (e) => {
+//     e.preventDefault();
+//     try {
+//       const res = await axios.post('http://localhost:5000/api/users', { name, age });
+//       console.log('User created:', res.data);
+//     } catch (err) {
+//       console.error('Error creating user:', err.response?.data);
+//     }
+//   };
+
+//   return (
+//     <form onSubmit={handleSubmit}>
+//       <input value={name} onChange={e => setName(e.target.value)} placeholder="Name" />
+//       <input value={age} onChange={e => setAge(e.target.value)} placeholder="Age" type="number" />
+//       <button type="submit">Create User</button>
+//     </form>
+//   );
+// }
+
+// export default CreateUser;
+
+// -------------------------------------------------------------------
+
+
+
+
+
+// import { useState } from "react";
+// import { Link } from "react-router-dom";
+// import axios from 'axios';
+// import { useNavigate } from "react-router-dom";
+
+// function Signup() {
+//   const [name, setName] = useState()
+//   const [email, setEmail] = useState()
+//   const [password, setPassword] = useState()
+//   const navigate = useNavigate()
+
+//   const handleSubmit = (e) => {
+//     e.preventDefault()
+//     axios.post('http://localhost:3001/register', { name, email, password })
+//       .then(result => console.log(result))
+//     navigate('/login')
+//       .catch(err => console.log(err))
+//   }
+//   return (
+
+//     <div className="d-flex justify-content-center align-items-center bg-secondary vh-100">
+//       <div className="bg-white p-3 rounded w-25">
+//         <h2>Register</h2>
+//         <form onSubmit={handleSubmit}></form>
+

@@ -40,13 +40,13 @@ const ServiceModel = require('./models/service.js')
 // const GroupModel = require('./models/Group');
 const ContactModel = require('./models/contact.js')
 const User = require('./models/User.js')
-// const dotenv = require("dotenv");
-
+const dotenv = require("dotenv");
+const PORT = process.env.PORT || 3001;
 // const PORT = process.env.PORT;
-const PORT = 3001;
+// const PORT = 3001;
 const app = express()
 
-// dotenv.config();
+dotenv.config();
 app.use(express.json())
 
 // app.use(express.json({ limit: "10mb" }));
@@ -82,7 +82,9 @@ app.use(bodyParser.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // serve uploaded files
 // const __dirname = path.resolve();
 
-mongoose.connect('mongodb://127.0.0.1:27017/associationDB')
+// mongoose.connect('mongodb://127.0.0.1:27017/associationDB')
+ const URL = process.env.MONGODB_URL;
+mongoose.connect(URL)
 .then(() => console.log("✅ MongoDB connected"))
   .catch(err => console.log("❌ MongoDB error:", err.message));
 // const URL = "mongodb://127.0.0.1:27017/school"
@@ -560,7 +562,7 @@ app.get("/getService/:id" , (req,res) => {
     .then(event => res.json(event)) 
     .catch(err => res.json(err))
 })
-app.post("/services", async (req, res) => {
+app.post("/createservices", async (req, res) => {
   try {
     const service = await ServiceModel.create(req.body);
     res.status(201).json(service);

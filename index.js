@@ -113,6 +113,12 @@ mongoose.connect(URL)
 // 📝 Login Route
 
 
+//  Ensure uploads folder exists
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir);
+}
+
 app.post("/api/auth/login", async (req, res) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email: email.toLowerCase() });
@@ -159,12 +165,6 @@ app.post("/api/auth/register", async (req, res) => {
 
 
 
-
-//  Ensure uploads folder exists
-const uploadDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
-}
 
 // Multer setup
 // const storage = multer.memoryStorage({

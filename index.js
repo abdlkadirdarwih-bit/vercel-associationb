@@ -61,17 +61,18 @@ app.use(express.json())
 //   process.env.FRONTEND_URL_LOCAL,
 //   process.env.FRONTEND_URL_PROD
 // ];
-const allowedOrigins = [
-  process.env.FRONTEND_URL_LOCAL,
-  process.env.FRONTEND_URL_PROD
-];
+app.use(cors());
 
-app.use(cors({
-  origin: allowedOrigins,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-}));
-// app.use(cors());
+// const allowedOrigins = [
+//   process.env.FRONTEND_URL_LOCAL,
+//   process.env.FRONTEND_URL_PROD
+// ];
+
+// app.use(cors({
+//   origin: allowedOrigins,
+//   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+//   allowedHeaders: ["Content-Type", "Authorization"],
+// }));
 
 app.use(bodyParser.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // serve uploaded files

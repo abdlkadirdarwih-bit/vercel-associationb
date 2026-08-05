@@ -114,7 +114,7 @@ mongoose.connect(URL)
 
 
 app.post("/api/auth/login", async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password } = req.body; 
   const user = await User.findOne({ email: email.toLowerCase() });
   if (!user) return res.status(400).json({ message: " البريد الإلكتروني أو كلمة المرور  غير صحيحة " });
 
@@ -555,7 +555,7 @@ app.get("/services", async (req, res) => {
 
 app.get("/getService/:id" , (req,res) => {
     const id = req.params.id;
-    EventModel.findById({_id:id})
+    ServiceModel.findById({_id:id})
     .then(event => res.json(event)) 
     .catch(err => res.json(err))
 })

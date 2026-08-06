@@ -57,16 +57,27 @@ app.use(express.json())
 //   allowedHeaders: "Content-Type, Authorization"
 // }));
 
-// const allowedOrigins = [
-//   process.env.FRONTEND_URL_LOCAL,
-//   process.env.FRONTEND_URL_PROD
-// ];
-app.use(cors());
+const allowedOrigins = [
+  process.env.FRONTEND_URL_LOCAL,
+  process.env.FRONTEND_URL_PROD
+];
+// app.use(cors());
 
-// const allowedOrigins = [
-//   process.env.FRONTEND_URL_LOCAL,
-//   process.env.FRONTEND_URL_PROD
-// ];
+app.use(cors({
+  origin: function(origin, callback){
+    // allow requests with no origin (Postman, curl)
+    if(!origin) return callback(null, true);
+
+    if(allowedOrigins.indexOf(origin) === -1){
+      const msg = `CORS policy: ${origin} not allowed`;
+      return callback(new Error(msg),  );
+    }
+
+    return callback(null, true);
+  },
+  credentials: true
+}));
+
 
 // app.use(cors({
 //   origin: allowedOrigins,
@@ -81,11 +92,12 @@ app.use(cors());
 //   fs.mkdirSync(uploadDir);
 // }
 // mongoose.connect('mongodb://127.0.0.1:27017/associationDB')
- const URL = process.env.MONGODB_URL;
+//  const URL = process.env.MONGODB_URL;
 mongoose.connect(URL)
 .then(() => console.log("✅ MongoDB connected"))
   .catch(err => console.log("❌ MongoDB error:", err.message));
-// const URL = "mongodb://127.0.0.1:27017/school"
+
+  // const URL = "mongodb://127.0.0.1:27017/school"
 //  const URL = process.env.MONGODB_URL;
 // //  {
 // //   useNewUrlParser: true,
